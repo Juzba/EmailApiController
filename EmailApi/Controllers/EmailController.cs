@@ -1,4 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MailKit.Security;
+using Microsoft.AspNetCore.Mvc;
+using MimeKit;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.AspNetCore.Mvc;
+using MimeKit;
 
 namespace EmailApi.Controllers
 {
@@ -14,7 +20,30 @@ namespace EmailApi.Controllers
 
         public IActionResult SendEmail([FromBody] EmailRequest emailRequest)
         {
-            return Ok("E-mail byl úspěšně odeslán.");
+
+
+            try
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Jiří Strnadel", "Juzba88@seznam.cz"));
+                message.To.Add(new MailboxAddress(emailRequest.Email, emailRequest.Email));
+                message.Subject = emailRequest.Name;
+                message.Body = new TextPart("plain") { Text = emailRequest.Message };
+
+                using (var client = new SmtpClient())
+                {
+                    client.Connect("smtp.seznam.cz", 587, SecureSocketOptions.StartTls); // Použij své SMTP nastavení  
+                    client.Authenticate("Juzba88@seznam.cz", "nebermiheslo.cz");
+                    client.Send(message);
+                    client.Disconnect(true);
+                }
+
+                return Ok("E-mail byl úspěšně odeslán.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Chyba při odesílání e-mailu: {ex.Message}");
+            }
         }
     }
 }
